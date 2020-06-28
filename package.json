@@ -1,0 +1,32 @@
+{
+  "name": "redis-plus",
+  "version": "0.0.5",
+  "description": "Redis Plus",
+  "main": "./lib/index.js",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build:lib": "tsc",
+    "clean:lib": "rimraf lib"
+  },
+  "devDependencies": {
+    "@types/redis": "^2.8.21",
+    "redis": "^3.0.2",
+    "tslint": "5.10.0",
+    "typescript": "^3.3.3333"
+  },
+  "peerDependencies": {
+    "@types/redis": "^2.8.21",
+    "redis": "^3.0.2"
+  },
+  "publishConfig": {
+    "registry": "https://registry.npmjs.org/"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com/common-ts/redis"
+  },
+  "keywords": [
+    "redis",
+    "redis plus"
+  ]
+}
