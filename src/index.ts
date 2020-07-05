@@ -1,9 +1,9 @@
 import {ClientOpts, createClient, RedisClient} from 'redis';
 
 export interface HealthService {
-  check(): Promise<any>;
   name(): string;
-  build(data: any, error: any): any;
+  build(data: Map<string, any>, error: any): Map<string, any>;
+  check(): Promise<Map<string, any>>;
 }
 
 export interface CacheService<K, V> {
@@ -20,78 +20,79 @@ export interface CacheService<K, V> {
   size?(): Promise<number>;
 }
 
-// tslint:disable-next-line:class-name
-export class redis {
-  static createClient(url: string, options?: ClientOpts): RedisClient {
-    const redisClient = createClient(url, options);
-    redisClient.on('ready', () => {
-      console.log('Connected successfully to Redis server');
-    });
-    redisClient.on('error', (err) => {
-      console.warn(err.message);
-    });
-    return redisClient;
-  }
-  static ping(client: RedisClient): Promise<string> {
-    return new Promise((resolve, reject) => {
-      client.ping((err, result) => err ? reject(err) : resolve(result));
-    });
-  }
+export function createRedisClient(url: string, options?: ClientOpts): RedisClient {
+  const redisClient = createClient(url, options);
+  redisClient.on('ready', () => {
+    console.log('Connected successfully to Redis server');
+  });
+  redisClient.on('error', (err) => {
+    console.warn(err.message);
+  });
+  return redisClient;
+}
 
-  static set(client: RedisClient, key: string, value: string, expiresInSeconds?: number): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      if (!expiresInSeconds || expiresInSeconds <= 0) {
-        client.set(key, value, (err, result) => err ? reject(err) : resolve(result === 'OK'));
-      } else {
-        client.set(key, value, 'EX', expiresInSeconds, (err, result) => err ? reject(err) : resolve(result === 'OK'));
-      }
-    });
-  }
-  static expire(client: RedisClient, key: string, expiresInseconds: number): Promise<boolean> {
-    return new Promise((resolve, reject) => {
-      return client.expire(key, expiresInseconds, (err, result) => err ? reject(err) : resolve(result !== 0));
-    });
-  }
+export function ping(client: RedisClient): Promise<string> {
+  return new Promise((resolve, reject) => {
+    client.ping((err, result) => err ? reject(err) : resolve(result));
+  });
+}
 
-  static get(client: RedisClient, key: string): Promise<string> {
-    return new Promise((resolve, reject) => {
-      client.get(key, (err, result) => err ? reject(err) : resolve(result));
-    });
-  }
+export function set(client: RedisClient, key: string, value: string, expiresInSeconds?: number): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    if (!expiresInSeconds || expiresInSeconds <= 0) {
+      client.set(key, value, (err, result) => err ? reject(err) : resolve(result === 'OK'));
+    } else {
+      client.set(key, value, 'EX', expiresInSeconds, (err, result) => err ? reject(err) : resolve(result === 'OK'));
+    }
+  });
+}
 
-  static getMany(client: RedisClient, keys: string[]): Promise<string[]> {
-    return new Promise(((resolve, reject) => {
-      client.mget(keys, (err, result) => err ? reject(err) : resolve(result));
-    }));
-  }
+export function expire(client: RedisClient, key: string, expiresInseconds: number): Promise<boolean> {
+  return new Promise((resolve, reject) => {
+    return client.expire(key, expiresInseconds, (err, result) => err ? reject(err) : resolve(result !== 0));
+  });
+}
 
-  static exists(client: RedisClient, key: string): Promise<boolean> {
-    return new Promise(((resolve, reject) => {
-      client.exists(key, (err, result) => err ? reject(err) : resolve(result === 1));
-    }));
-  }
+export function get(client: RedisClient, key: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    client.get(key, (err, result) => err ? reject(err) : resolve(result));
+  });
+}
 
-  static delete(client: RedisClient, key: string): Promise<boolean> {
-    return new Promise(((resolve, reject) => {
-      client.del(key, (err, result) => err ? reject(err) : resolve(result === 1));
-    }));
-  }
+export function getMany(client: RedisClient, arr: string[]): Promise<string[]> {
+  return new Promise(((resolve, reject) => {
+    client.mget(arr, (err, result) => err ? reject(err) : resolve(result));
+  }));
+}
 
-  static clear(client: RedisClient): Promise<boolean> {
-    return new Promise(((resolve, reject) => {
-      client.flushdb((err, result) => err ? reject(err) : resolve(result === 'OK'));
-    }));
-  }
-  static keys(client: RedisClient): Promise<string[]> {
-    return new Promise((resolve, reject) => {
-      client.keys('*', (err, result) => err ? reject(err) : resolve(result));
-    });
-  }
-  static count(client: RedisClient): Promise<number> {
-    return new Promise((resolve, reject) => {
-      client.dbsize((err, result) => err ? reject(err) : resolve(result));
-    });
-  }
+export function exists(client: RedisClient, key: string): Promise<boolean> {
+  return new Promise(((resolve, reject) => {
+    client.exists(key, (err, result) => err ? reject(err) : resolve(result === 1));
+  }));
+}
+
+export function deleteKey(client: RedisClient, key: string): Promise<boolean> {
+  return new Promise(((resolve, reject) => {
+    client.del(key, (err, result) => err ? reject(err) : resolve(result === 1));
+  }));
+}
+
+export function clear(client: RedisClient): Promise<boolean> {
+  return new Promise(((resolve, reject) => {
+    client.flushdb((err, result) => err ? reject(err) : resolve(result === 'OK'));
+  }));
+}
+
+export function keys(client: RedisClient): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    client.keys('*', (err, result) => err ? reject(err) : resolve(result));
+  });
+}
+
+export function count(client: RedisClient): Promise<number> {
+  return new Promise((resolve, reject) => {
+    client.dbsize((err, result) => err ? reject(err) : resolve(result));
+  });
 }
 
 export class RedisHealthService implements HealthService {
@@ -111,9 +112,9 @@ export class RedisHealthService implements HealthService {
   name(): string {
     return this.service;
   }
-  check(): Promise<any> {
-    const promise = new Promise((resolve, reject) => {
-      this.client.ping((err, result) => err ? reject(err) : resolve({}));
+  check(): Promise<Map<string, any>> {
+    const promise = new Promise<Map<string, any>>((resolve, reject) => {
+      this.client.ping((err, result) => err ? reject(err) : resolve(new Map<string, any>()));
     });
     if (this.timeout > 0) {
       return this.promiseTimeOut(this.timeout, promise);
@@ -121,17 +122,17 @@ export class RedisHealthService implements HealthService {
       return promise;
     }
   }
-  build(data: any, err: any): any {
+  build(data: Map<string, any>, err: any): Map<string, any> {
     if (err) {
-      data['error'] = err;
+      data.set('error', err);
     }
     return data;
   }
 
-  private promiseTimeOut(timeoutInMilliseconds: number, promise: Promise<any>): Promise<any> {
+  private promiseTimeOut(timeoutInMilliseconds: number, promise: Promise<Map<string, any>>): Promise<Map<string, any>> {
     return Promise.race([
       promise,
-      new Promise((resolve, reject) => {
+      new Promise<Map<string, any>>((resolve, reject) => {
         setTimeout(() => {
           reject(`Timed out in: ${timeoutInMilliseconds} milliseconds!`);
         }, timeoutInMilliseconds);
@@ -162,44 +163,44 @@ export class RedisService implements CacheService<string, string> {
     if (!this.isEnabled()) {
       return Promise.reject(false);
     }
-    return redis.set(this.client, key, value, expiresInSeconds);
+    return set(this.client, key, value, expiresInSeconds);
   }
   expire(key: string, timeToLive: number): Promise<boolean> {
-    return redis.expire(this.client, key, timeToLive);
+    return expire(this.client, key, timeToLive);
   }
 
   get(key: string): Promise<string> {
     if (this.isEnabled()) {
-      return redis.get(this.client, key);
+      return get(this.client, key);
     } else {
       return new Promise((resolve, reject) => resolve(null));
     }
   }
 
-  getMany(keys: string[]): Promise<string[]> {
+  getMany(arr: string[]): Promise<string[]> {
     if (this.isEnabled()) {
-      return redis.getMany(this.client, keys);
+      return getMany(this.client, arr);
     } else {
-      const res = Array.apply(null, new Array(keys.length));
+      const res = Array.apply(null, new Array(arr.length));
       return res;
     }
   }
 
   containsKey(key: string): Promise<boolean> {
-    return redis.exists(this.client, key);
+    return exists(this.client, key);
   }
 
   remove(key: string): Promise<boolean> {
-    return redis.delete(this.client, key);
+    return deleteKey(this.client, key);
   }
 
   clear(): Promise<boolean> {
-    return redis.clear(this.client);
+    return clear(this.client);
   }
   keys(): Promise<string[]> {
-    return redis.keys(this.client);
+    return keys(this.client);
   }
   count(): Promise<number> {
-    return redis.count(this.client);
+    return count(this.client);
   }
 }
